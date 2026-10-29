@@ -1,16 +1,16 @@
-name: Auto Update IPTV Playlists
+name: Update M3U Playlist
 
 on:
   schedule:
-    - cron: '0 * * * *'  # প্রতি ১ ঘণ্টা পরপর রান হবে
-  workflow_dispatch:      # ম্যানুয়ালি রান করার বাটন
+    # প্রতিদিন রাত ১২:০০ টায় (UTC) একবার স্বয়ংক্রিয়ভাবে চলবে (২৪ ঘণ্টায় একবার)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # এটি যুক্ত করায় আপনি Actions ট্যাব থেকে ম্যানুয়ালি রান করতে পারবেন
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write
+      contents: write # ফাইলে পরিবর্তন পুশ করার অনুমতি
 
     steps:
       - name: Checkout Repository
@@ -19,22 +19,19 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.x'
 
       - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install requests pytz
+          pip install requests
 
-      - name: Process & Generate Playlists
-        env:
-          SOURCE_PLAYLISTS: ${{ secrets.SOURCE_PLAYLISTS }}
+      - name: Process and Generate Playlist
         run: |
           python process.py
 
-      - name: Commit and Push Directly to Root
+      - name: Commit and Push Changes
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add *.json *.m3u
-          git diff --quiet && git diff --staged --quiet || (git commit -m "🔁 Auto-update playlists [$(TZ='Asia/Dhaka' date '+%Y-%m-%d %I:%M %p')]" && git push)
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add output.m3u
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto update playlist [skip ci]" && git push)
